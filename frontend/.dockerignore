@@ -1,0 +1,15 @@
+# Ignora as dependências do host.
+# O contêiner irá instalar as suas próprias.
+node_modules
+
+# Ignora saídas de build (que também serão geradas no container)
+dist
+.vite/
+
+# Logs
+npm-debug.log
+
+# Arquivos de ambiente do host
+.env
+.env.*
+!.env.example
