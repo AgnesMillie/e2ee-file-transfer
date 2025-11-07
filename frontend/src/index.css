@@ -15,10 +15,21 @@
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
+}
+
+/* Correção: 
+  Movemos a centralização do <body> para o #root,
+  que é o contêiner real da nossa aplicação React.
+  Usamos as propriedades corretas do Flexbox.
+*/
+#root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center; /* Centraliza horizontalmente */
+  align-items: center; /* Centraliza verticalmente */
 }
 
 /* Garante um modelo de caixa mais intuitivo */
