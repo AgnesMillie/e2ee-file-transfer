@@ -1,0 +1,11 @@
+# Define que todos os arquivos de texto usarão LF (Unix line endings)
+* text=auto eol=lf
+
+# Define arquivos que devem ser tratados como binários
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.svg binary
+*.woff binary
+*.woff2 binary
