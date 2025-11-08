@@ -70,7 +70,7 @@ export async function encryptFile(
   const encryptedData = await globalThis.crypto.subtle.encrypt(
     {
       name: ALGORITHM,
-      iv: iv,
+      iv: iv.buffer.slice(0),
     },
     key,
     fileBuffer,
@@ -97,7 +97,7 @@ export async function decryptFile(
   const decryptedBuffer = await globalThis.crypto.subtle.decrypt(
     {
       name: ALGORITHM,
-      iv: iv,
+      iv: new Uint8Array(iv),
     },
     key,
     encryptedData,

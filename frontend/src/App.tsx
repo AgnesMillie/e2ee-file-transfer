@@ -1,5 +1,8 @@
+import { UploadForm } from './components/UploadForm';
+import './index.css'; // Garante que o CSS global seja importado
+
 function App() {
-  return <h1>E2EE File Transfer</h1>;
+  return <UploadForm />;
 }
 
 export default App;
