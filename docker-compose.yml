@@ -8,7 +8,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "${API_PORT:-3000}:3000"
+      - '${API_PORT:-3000}:3000'
     volumes:
       - ./backend:/app
       # Ignora node_modules do host para usar o do container
@@ -30,13 +30,17 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "${APP_PORT:-5173}:5173"
+      - '${APP_PORT:-5173}:5173'
     volumes:
       - ./frontend:/app
       # Ignora node_modules do host para usar o do container
       - /app/node_modules
     networks:
       - e2ee_network
+    # --- Adicionar esta seção ---
+    environment:
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL}
+    # ---------------------------
 
   # ------------------------------------------------
   # Banco de Dados (PostgreSQL)
@@ -51,7 +55,7 @@ services:
     volumes:
       - e2ee_db_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432" # Expor apenas para debug local, se necessário
+      - '5432:5432' # Expor apenas para debug local, se necessário
     networks:
       - e2ee_network
 
@@ -66,8 +70,8 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
-      - "9000:9000" # Porta da API S3
-      - "9001:9001" # Porta do Console Web
+      - '9000:9000' # Porta da API S3
+      - '9001:9001' # Porta do Console Web
     volumes:
       - e2ee_storage_data:/data
     networks:
