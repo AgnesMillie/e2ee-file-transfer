@@ -1,71 +1,50 @@
 import axios from 'axios';
 
-// 1. Obtém a URL base da nossa API a partir das variáveis de ambiente
-// O Vite injeta isso em 'import.meta.env'
+// 1. Obtém a URL base da nossa API (Axios ainda é usado)
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-// 2. Cria uma instância do Axios pré-configurada
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  // O Content-Type será 'multipart/form-data',
+  // mas deixamos o axios/navegador definir isso.
 });
 
-// 3. Define os tipos de dados que esperamos da nossa API
-// (Ainda não criamos esta rota no back-end, mas vamos criar)
-interface PresignedUrlResponse {
-  uploadUrl: string; // URL para onde o front-end fará o PUT
-  fileKey: string; // O UUID/nome do arquivo no S3
-}
-
 /**
- * Solicita ao back-end uma URL pré-assinada para upload.
- * @param fileKey O nome único (UUID) que o arquivo terá no S3.
- * @param contentType O tipo MIME do arquivo (ex: 'image/png').
+ * --- ARQUITETURA PROXY (NOVA FUNÇÃO) ---
+ * Faz o upload do arquivo criptografado, fileKey e contentType
+ * diretamente para o nosso Back-end.
+ *
+ * @param fileKey O UUID do arquivo.
+ * @param contentType O MIME type original.
+ * @param encryptedData O blob do arquivo criptografado.
  */
-export async function getPresignedUploadUrl(
+export async function uploadFile(
   fileKey: string,
   contentType: string,
-): Promise<PresignedUrlResponse> {
-  try {
-    const response = await apiClient.post<PresignedUrlResponse>(
-      '/files/upload-url', // Rota da API (criaremos no back-end)
-      {
-        fileKey,
-        contentType,
-      },
-    );
-    return response.data;
-  } catch (error) {
-    console.error('Erro ao obter URL pré-assinada:', error);
-    throw new Error('Falha ao preparar o upload. Tente novamente.');
-  }
-}
-
-/**
- * Faz o upload do arquivo criptografado diretamente para o S3/Minio
- * usando a URL pré-assinada.
- * @param uploadUrl A URL recebida do nosso back-end.
- * @param encryptedData O arquivo criptografado (ArrayBuffer).
- * @param contentType O tipo MIME original.
- */
-export async function uploadFileToStorage(
-  uploadUrl: string,
   encryptedData: ArrayBuffer,
-  contentType: string,
 ) {
+  // 1. Converte o ArrayBuffer em um Blob para o FormData
+  const fileBlob = new Blob([encryptedData]);
+
+  // 2. Cria o payload FormData (obrigatório para upload de arquivos)
+  const formData = new FormData();
+  formData.append('fileKey', fileKey);
+  formData.append('contentType', contentType);
+  // O nome do campo 'file' DEVE bater com o FileInterceptor no back-end
+  formData.append('file', fileBlob);
+
+  // --- LOGS ---
+  console.log(
+    `[LOG-FRONTEND-PROXY] Enviando POST para: ${API_BASE_URL}/files/upload`,
+  );
+  console.log(`[LOG-FRONTEND-PROXY] Enviando Key: ${fileKey}`);
+
   try {
-    // Nota: Usamos 'axios.put' aqui, não o 'apiClient',
-    // pois estamos enviando para uma URL externa (Minio/S3),
-    // não para a nossa API.
-    await axios.put(uploadUrl, encryptedData, {
-      headers: {
-        'Content-Type': contentType,
-      },
-    });
+    // 3. Envia o formulário para o back-end
+    // O Axios definirá automaticamente o 'Content-Type: multipart/form-data'
+    await apiClient.post('/files/upload', formData);
   } catch (error) {
-    console.error('Erro ao fazer upload do arquivo para o S3:', error);
+    console.error('[LOG-FRONTEND-PROXY] Erro ao fazer upload:', error);
     throw new Error('Falha no upload do arquivo.');
   }
 }
