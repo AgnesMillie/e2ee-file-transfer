@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { StorageModule } from './storage/storage.module';
+import { FilesModule } from './files/files.module';
 
 @Module({
   imports: [
@@ -36,6 +37,8 @@ import { StorageModule } from './storage/storage.module';
     }),
 
     StorageModule,
+
+    FilesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
