@@ -3,11 +3,10 @@ import { ConfigService } from '@nestjs/config';
 import {
   S3Client,
   PutObjectCommand,
-  GetObjectCommand,
+  // GetObjectCommand, // <-- Removido
   HeadBucketCommand,
   CreateBucketCommand,
 } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 @Injectable()
 export class StorageService implements OnModuleInit {
@@ -18,27 +17,20 @@ export class StorageService implements OnModuleInit {
     @Inject(S3Client) private readonly s3Client: S3Client,
     private readonly configService: ConfigService,
   ) {
-    // Carrega o nome do bucket uma vez no construtor
-    // [FIX Linter]: Quebra de linha aplicada
     this.bucketName =
       this.configService.getOrThrow<string>('MINIO_BUCKET_NAME');
   }
 
-  /**
-   * Chamado automaticamente pelo NestJS quando o módulo inicia.
-   * Usamos para garantir que o bucket de armazenamento exista.
-   */
+  // A função onModuleInit (verificação do bucket) permanece a mesma
   async onModuleInit() {
     this.logger.log(`Verificando bucket: ${this.bucketName}`);
     try {
-      // Tenta obter os metadados do bucket para ver se ele existe
       await this.s3Client.send(
         new HeadBucketCommand({ Bucket: this.bucketName }),
       );
       this.logger.log(`Bucket '${this.bucketName}' já existe.`);
     } catch (error: unknown) {
       let is404Error = false;
-      // [FIX Linter]: Quebra de linha aplicada
       if (error && typeof error === 'object' && '$metadata' in error) {
         const metadata = error['$metadata'] as { httpStatusCode?: number };
         if (metadata.httpStatusCode === 404) {
@@ -72,39 +64,37 @@ export class StorageService implements OnModuleInit {
     }
   }
 
+  // --- ARQUITETURA PROXY (NOVO MÉTODO) ---
   /**
-   * Gera uma URL pré-assinada para UPLOAD (PUT).
-   * O front-end usará esta URL para enviar o arquivo criptografado.
-   * @param key O nome único do arquivo (UUID)
-   * @param contentType O tipo MIME do arquivo
-   * @param expiresIn Segundos até a URL expirar (padrão: 3600s = 1h)
+   * Faz o upload de um buffer de arquivo diretamente para o Minio/S3.
+   * @param fileKey A chave (nome) do arquivo.
+   * @param buffer Os dados do arquivo.
+   * @param contentType O tipo MIME.
    */
-  async getPresignedUploadUrl(
-    key: string,
-    contentType: string,
-    expiresIn = 3600,
-  ): Promise<string> {
+  // Correção Prettier: Assinatura em linha única
+  async uploadFile(fileKey: string, buffer: Buffer, contentType: string) {
+    this.logger.log(
+      `[LOG-BACKEND-PROXY] Uploading ${fileKey} (${contentType})`,
+    );
+
     const command = new PutObjectCommand({
       Bucket: this.bucketName,
-      Key: key,
+      Key: fileKey,
+      Body: buffer,
       ContentType: contentType,
     });
-    return getSignedUrl(this.s3Client, command, { expiresIn });
+
+    try {
+      await this.s3Client.send(command);
+      this.logger.log(`[LOG-BACKEND-PROXY] Sucesso no upload de ${fileKey}`);
+    } catch (error) {
+      this.logger.error(
+        `[LOG-BACKEND-PROXY] Falha no upload de ${fileKey}`,
+        error,
+      );
+      throw error;
+    }
   }
 
-  /**
-   * Gera uma URL pré-assinada para DOWNLOAD (GET).
-   * @param key O nome único do arquivo (UUID)
-   * @param expiresIn Segundos até a URL expirar (padrão: 3600s = 1h)
-   */
-  async getPresignedDownloadUrl(
-    key: string,
-    expiresIn = 3600,
-  ): Promise<string> {
-    const command = new GetObjectCommand({
-      Bucket: this.bucketName,
-      Key: key,
-    });
-    return getSignedUrl(this.s3Client, command, { expiresIn });
-  }
+  // Funções 'getPresigned...' removidas
 }
