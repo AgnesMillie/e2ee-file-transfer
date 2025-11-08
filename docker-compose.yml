@@ -37,10 +37,8 @@ services:
       - /app/node_modules
     networks:
       - e2ee_network
-    # --- Adicionar esta seção ---
     environment:
       - VITE_API_BASE_URL=${VITE_API_BASE_URL}
-    # ---------------------------
 
   # ------------------------------------------------
   # Banco de Dados (PostgreSQL)
@@ -69,6 +67,11 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      # --- CORREÇÃO CORS COMPLETA ---
+      MINIO_BROWSER_CORS_ALLOW_ORIGIN: "http://localhost:${APP_PORT:-5173}"
+      MINIO_BROWSER_CORS_ALLOW_METHODS: "PUT,GET"
+      MINIO_BROWSER_CORS_ALLOW_HEADERS: "Content-Type"
+      # ------------------------------
     ports:
       - '9000:9000' # Porta da API S3
       - '9001:9001' # Porta do Console Web

@@ -14,20 +14,17 @@ async function bootstrap() {
     }),
   );
 
-  // Habilita o CORS
+  // Habilita o CORS (Cross-Origin Resource Sharing)
   app.enableCors({
-    origin: '*',
-    methods: 'GET,POST',
+    origin: '*', // Em produção, travaríamos para a URL do front-end
+    methods: 'GET,POST,OPTIONS', // <-- CORREÇÃO: Adiciona OPTIONS
   });
 
   await app.listen(3000);
 }
 
 // Correção para 'no-floating-promises':
-// Adicionamos o .catch() para tratar qualquer erro fatal durante a inicialização.
 bootstrap().catch((err) => {
-  // Isso garante que, se o app falhar ao iniciar, o erro será logado
-  // e o processo sairá com um código de falha.
   console.error('Falha ao inicializar a aplicação (bootstrap):', err);
   process.exit(1);
 });
