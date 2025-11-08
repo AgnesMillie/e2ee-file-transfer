@@ -9,61 +9,77 @@ import {
   MaxFileSizeValidator,
   BadRequestException,
   Body,
+  Get,
+  Param,
+  Res,
+  NotFoundException,
 } from '@nestjs/common';
 import { StorageService } from 'src/storage/storage.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CreatePresignedUrlDto } from './dto/create-presigned-url.dto';
+import type { Response } from 'express';
 
 @Controller('files')
 export class FilesController {
   constructor(private readonly storageService: StorageService) {}
 
   /**
-   * Removemos a rota antiga 'upload-url'.
-   * Ela será substituída pela nova rota 'upload' abaixo.
-   */
-
-  /**
-   * --- ARQUITETURA PROXY (NOVA ROTA) ---
-   * Aceita um upload de arquivo (multipart/form-data)
-   * O front-end enviará 'fileKey', 'contentType' e o 'file' (blob)
+   * Rota de Upload (Arquitetura Proxy)
    */
   @Post('upload')
-  @UseInterceptors(FileInterceptor('file')) // Diz ao NestJS para procurar um campo 'file'
+  @UseInterceptors(FileInterceptor('file'))
   @HttpCode(HttpStatus.OK)
   async proxyUpload(
     @UploadedFile(
-      // Validação de Segurança (Pipe)
       new ParseFilePipe({
         validators: [
-          // Limite de 1GB (em bytes)
-          new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 1024 }),
+          new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 1024 }), // 1GB
         ],
       }),
     )
-    file: Express.Multer.File, // O arquivo extraído pelo Multer
-    @Body() body: CreatePresignedUrlDto, // O resto dos campos (fileKey, contentType)
+    file: Express.Multer.File,
+    @Body() body: CreatePresignedUrlDto,
   ) {
     if (!file) {
       throw new BadRequestException('Nenhum arquivo enviado.');
     }
 
-    // O 'body' contém o DTO (fileKey, contentType)
-    // O 'file' contém o 'buffer' (os dados criptografados)
-
-    // Usamos o contentType do DTO, pois o 'file.mimetype'
-    // (do blob criptografado) será 'application/octet-stream'
     const { fileKey, contentType } = body;
 
-    await this.storageService.uploadFile(
-      fileKey,
-      file.buffer, // O buffer de dados
-      contentType, // O tipo original (do DTwo)
-    );
+    // Correção Prettier: Linha única
+    await this.storageService.uploadFile(fileKey, file.buffer, contentType);
 
     return {
       message: 'Upload concluído com sucesso.',
       fileKey: fileKey,
     };
+  }
+
+  /**
+   * Rota de Download (Arquitetura Proxy)
+   */
+  @Get('download/:fileKey')
+  async proxyDownload(
+    @Param('fileKey') fileKey: string,
+    @Res() res: Response, // Injeta o objeto de Resposta do Express
+  ) {
+    try {
+      const { fileStream, contentType } =
+        await this.storageService.downloadFile(fileKey);
+
+      // Define os headers da resposta
+      res.setHeader('Content-Type', contentType);
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${fileKey}.encrypted"`,
+      );
+
+      // Inicia o stream do Minio (fileStream) para o cliente (res)
+      fileStream.pipe(res);
+    } catch {
+      // Correção ESLint/SonarLint: Removemos a variável 'error' não utilizada.
+      // O StorageService já logou o erro real.
+      throw new NotFoundException('Arquivo não encontrado.');
+    }
   }
 }

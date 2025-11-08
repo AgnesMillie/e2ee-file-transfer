@@ -1,11 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import { UploadForm } from './components/UploadForm';
+import { DownloadPage } from './pages/DownloadPage'; // Importa a página real
 import './index.css';
-
-// Vamos criar um placeholder para a página de Download
-function DownloadPagePlaceholder() {
-  return <h1>Página de Download (Em construção)</h1>;
-}
 
 function App() {
   return (
@@ -14,7 +10,8 @@ function App() {
       <Route path="/" element={<UploadForm />} />
 
       {/* Rota 2: Página de Download */}
-      <Route path="/download/:fileKey" element={<DownloadPagePlaceholder />} />
+      {/* Removemos o 'DownloadPagePlaceholder' */}
+      <Route path="/download/:fileKey" element={<DownloadPage />} />
     </Routes>
   );
 }

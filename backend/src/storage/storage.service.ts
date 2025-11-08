@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import {
   S3Client,
   PutObjectCommand,
-  // GetObjectCommand, // <-- Removido
+  GetObjectCommand,
   HeadBucketCommand,
   CreateBucketCommand,
 } from '@aws-sdk/client-s3';
@@ -21,7 +21,6 @@ export class StorageService implements OnModuleInit {
       this.configService.getOrThrow<string>('MINIO_BUCKET_NAME');
   }
 
-  // A função onModuleInit (verificação do bucket) permanece a mesma
   async onModuleInit() {
     this.logger.log(`Verificando bucket: ${this.bucketName}`);
     try {
@@ -64,18 +63,8 @@ export class StorageService implements OnModuleInit {
     }
   }
 
-  // --- ARQUITETURA PROXY (NOVO MÉTODO) ---
-  /**
-   * Faz o upload de um buffer de arquivo diretamente para o Minio/S3.
-   * @param fileKey A chave (nome) do arquivo.
-   * @param buffer Os dados do arquivo.
-   * @param contentType O tipo MIME.
-   */
-  // Correção Prettier: Assinatura em linha única
   async uploadFile(fileKey: string, buffer: Buffer, contentType: string) {
-    this.logger.log(
-      `[LOG-BACKEND-PROXY] Uploading ${fileKey} (${contentType})`,
-    );
+    // [LOG-BACKEND-PROXY] Removido
 
     const command = new PutObjectCommand({
       Bucket: this.bucketName,
@@ -86,7 +75,7 @@ export class StorageService implements OnModuleInit {
 
     try {
       await this.s3Client.send(command);
-      this.logger.log(`[LOG-BACKEND-PROXY] Sucesso no upload de ${fileKey}`);
+      // [LOG-BACKEND-PROXY] Removido
     } catch (error) {
       this.logger.error(
         `[LOG-BACKEND-PROXY] Falha no upload de ${fileKey}`,
@@ -96,5 +85,27 @@ export class StorageService implements OnModuleInit {
     }
   }
 
-  // Funções 'getPresigned...' removidas
+  async downloadFile(
+    fileKey: string,
+  ): Promise<{ fileStream: NodeJS.ReadableStream; contentType: string }> {
+    // [LOG-BACKEND-PROXY] Removido
+    const command = new GetObjectCommand({
+      Bucket: this.bucketName,
+      Key: fileKey,
+    });
+
+    try {
+      const response = await this.s3Client.send(command);
+      return {
+        fileStream: response.Body as NodeJS.ReadableStream,
+        contentType: response.ContentType || 'application/octet-stream',
+      };
+    } catch (error) {
+      this.logger.error(
+        `[LOG-BACKEND-PROXY] Falha ao baixar ${fileKey}`,
+        error,
+      );
+      throw error;
+    }
+  }
 }

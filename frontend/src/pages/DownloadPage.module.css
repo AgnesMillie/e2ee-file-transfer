@@ -1,0 +1,55 @@
+.downloadContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 2rem;
+  background-color: #2f2f2f;
+  border-radius: 8px;
+  border: 2px solid #4a4a4a;
+  width: 100%;
+  max-width: 500px;
+  text-align: center;
+}
+
+.downloadContainer h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #f0f0f0;
+}
+
+.fileName {
+  color: #a0a0a0;
+  font-size: 0.9rem;
+  word-break: break-all; /* Garante que o UUID não quebre o layout */
+}
+
+.downloadButton {
+  background-color: #28a745; /* Verde para sucesso/download */
+  color: #000; /* dark text for sufficient contrast on this background */
+  border: none;
+  border-radius: 4px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.downloadButton:hover {
+  background-color: #218838;
+}
+
+.downloadButton:disabled {
+  background-color: #5a5a5a;
+  cursor: not-allowed;
+}
+
+.errorMessage {
+  color: #e24a4a;
+  font-weight: 600;
+}
+
+.loadingText {
+  color: #bcbcbc;
+}
